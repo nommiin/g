@@ -31,7 +31,7 @@ g = {
             return g.p.p;
         },
         _sk: function(c) {
-            // SEEK
+            // SKIP
             while (g.p.i[g.p.p++] == c) {
                 if (g.p.p > g.p.i.length) {
                     console.log("End of stream error, seems as if the rest are '" + c + "' characters!");
