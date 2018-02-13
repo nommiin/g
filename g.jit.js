@@ -1,4 +1,5 @@
 g = {
+    d: /* debug*/ true,
     v: /* variables */ {
         g: function(n) /* global( name ) */ {
             return g.d.g.p[n];
@@ -14,25 +15,31 @@ g = {
         p: function(n) /* parse( number ) */ {
             for(var f in g.d.g.p) {n = n.replace(f, g.v.g(f).v);}
             for(var f in g.d.l.p) {n = n.replace(f, g.v.l(f).v);}
-            console.log("Parse: " + n);
+            if (g.d) {console.log("Parse:[" + n + "]")};
             return eval(n);
         }
     },
     p: /* parser */ {
         p: /* pointer */ 0,
         i: /* input*/ `
+            print(start of program)
+            print(----------)
             globalvar first = 32;
-            globalvar second = first / 2;
-            if (first * 2 == 64 && second == 16) {
-                globalvar third = 96;
-                print(Check passed!)
+            if (first == 32) {
+                print(first is 32)
+            } elseif (first == 24) {
+                print(first is 24)
+            } else {
+                print(first is not 32 or 24)
             }
+            print(----------)
+            print(end of program)
         `,
         f: /* parse( input ) */ function( i ) {
             for(g.p.p = 0; g.p.p < g.p.i.length; g.p.p++) {
                 for(t in g.t) {
                     if (g.p.i.substring(g.p.p, g.p.p + t.length) == t) {
-                        console.log("Token: '" + t + "'"); 
+                        if (g.d) {console.log("Token:[" + t + "]");} 
                         g.p.p += t.length;
                         g.t[t]();
                         break;
@@ -41,7 +48,7 @@ g = {
 
                 for (f in g.f) {
                     if (g.p.i.substring(g.p.p, g.p.p + f.length) == f) {
-                        console.log("Function: '" + f + "'");
+                        if (g.d) {console.log("Function:[" + f + "]");}
                         g.p.p += f.length - 1;
                         g.f[f].apply(this, g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).split(","));
                         break;
@@ -59,12 +66,14 @@ g = {
                 }
                 if (g.p.p > g.p.i.length) break;
             }
+            if (g.d) {console.log("Seek:[" + c + "]");}
             return g.p.p;
         }
     },
     d: /* data */ {
         g: /* globalvar */ {
             c: function(n, v) /* create( name, value ) */ {
+                if (g.d) {console.log("CreateGlobal:[" + n + ", " + v + "]");}
                 this.n = n;
                 this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
@@ -72,6 +81,7 @@ g = {
         },
         l: /* localvar */ {
             c: function(n, v) /* create( name, value ) */ {
+                if (g.d) {console.log("CreateLocal:[" + n + ", " + v + "]");}
                 this.n = n;
                 this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
@@ -79,29 +89,15 @@ g = {
         },
         f: /* function */ {
             c: function(n, a, c) /* create(name, arguments, code ) */{
+                if (g.d) {console.log("CreateFunction:[" + n + ", " + a + "]");}
                 this.n = n;
                 this.a = a;
                 this.c = c;
             },
             p: /* pool */ {}
-        },
-        c: /* conditional statement */ {
-            c: function(l, e, r) /* create(left, operator, right ) */{
-                this.l = l;
-                this.e = e;
-                this.r = r;
-            },
-            p: /* pool */ []
         }
     },
-    c: /* condtionals */ {
-        "<=": (l,r) => {return l <= r},
-        ">=": (l,r) => {return l >= r},
-        "!=": (l,r) => {return l != r},
-        "==": (l,r) => {return l == r},
-        "<": (l,r) =>  {return l < r},
-        ">": (l,r) =>  {return l > r}
-    },
+    c: /* condtional branch */ false,
     t: /* tokens */ {
         "globalvar": function() /* globalvar */ {
             let n = g.p.i.substring(g.p.p, g.p.s("=")).trim();
@@ -118,17 +114,42 @@ g = {
         "if": function() /* conditional */ {
             var n = g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).trim(); g.p.s("{");
             if (g.v.p(n) == false) {
+                if (g.d) {console.log("IfCondFail:[" + n + "]");}
+                g.p.s("}", "{");
+                g.c = true;
+            } else {
+                if (g.d) {console.log("IfCondPass:[" + n + "]");}
+            }
+        },
+        "elseif": function() /* elseif */ {
+            var n = g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).trim(); g.p.s("{");
+            if (g.v.p(n) == false) {
+                g.p.s("}", "{");
+                g.c = true;
+                if (g.d) {console.log("ElseifCondFail:[" + n + "]");}
+            } else {
+                g.c = false;
+                if (g.d) {console.log("ElseifCondPass:[" + n + "]");}
+            }
+        },
+        "else": function() /* else */ {
+            g.p.s("{");
+            if (g.c == true) {
+                if (g.d) {console.log("ElseReach:[" + g.c + "]");}
+                g.c = false;
+            } else {
+                if (g.d) {console.log("ElseReach:[" + g.c + "]");}
                 g.p.s("}", "{");
             }
         }
     },
     f: /* inbuilt functions */ {
         "print": function(s) {
-            console.log(s);
+            console.log("ProgramOutput:[" + s + "]");
         }
     }
 }
 
 g.p.f();
-console.log("Local: " + JSON.stringify(g.d.l.p));
-console.log("Global: " + JSON.stringify(g.d.g.p));
+console.log("LocalVar:[" + JSON.stringify(g.d.l.p) + "]");
+console.log("GlobalVar:[" + JSON.stringify(g.d.g.p) + "]");
