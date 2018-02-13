@@ -1,9 +1,9 @@
 g = {
-    v: {
-        g: function(n) {
+    v: /* variables */ {
+        g: function(n) /* global( name ) */ {
             return g.d.g.p[n];
         },
-        l: function(n) {
+        l: function(n) /* local( name ) */ {
             return g.d.l.p[n];
         },
         f: function(n) /* find( name ) */ {
@@ -18,9 +18,9 @@ g = {
             return eval(n);
         }
     },
-    p: {
-        p: 0,
-        i: `
+    p: /* parser */ {
+        p: /* pointer */ 0,
+        i: /* input*/ `
             globalvar first = 32;
             globalvar second = first / 2;
             if (first * 2 == 64 && second == 16) {
@@ -64,34 +64,34 @@ g = {
     },
     d: /* data */ {
         g: /* globalvar */ {
-            c: function(n, v) {
+            c: function(n, v) /* create( name, value ) */ {
                 this.n = n;
                 this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
-            p: {}
+            p: /* pool */ {}
         },
         l: /* localvar */ {
-            c: function(n, v) {
+            c: function(n, v) /* create( name, value ) */ {
                 this.n = n;
                 this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
-            p: {}
+            p: /* pool */ {}
         },
         f: /* function */ {
-            c: function(n, a, c) {
+            c: function(n, a, c) /* create(name, arguments, code ) */{
                 this.n = n;
                 this.a = a;
                 this.c = c;
             },
-            p: {}
+            p: /* pool */ {}
         },
         c: /* conditional statement */ {
-            c: function(l, e, r) {
+            c: function(l, e, r) /* create(left, operator, right ) */{
                 this.l = l;
                 this.e = e;
                 this.r = r;
             },
-            p: []
+            p: /* pool */ []
         }
     },
     c: /* condtionals */ {
@@ -103,22 +103,21 @@ g = {
         ">": (l,r) =>  {return l > r}
     },
     t: /* tokens */ {
-        "globalvar": function() {
+        "globalvar": function() /* globalvar */ {
             let n = g.p.i.substring(g.p.p, g.p.s("=")).trim();
             g.d.g.p[n] = new g.d.g.c(n,
                 g.p.i.substring(++g.p.p, g.p.s(";")).trim()
             );
         },
-        "var": function() {
+        "var": function() /* localvar */ {
             let n = g.p.i.substring(g.p.p, g.p.s("=")).trim();
             g.d.l.p[n] = new g.d.l.c(n,
                 g.p.i.substring(++g.p.p, g.p.s(";")).trim()
             );
         },
-        "if": function() {
+        "if": function() /* conditional */ {
             var n = g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).trim(); g.p.s("{");
             if (g.v.p(n) == false) {
-                console.log("Fail")
                 g.p.s("}", "{");
             }
         }
