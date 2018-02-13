@@ -4,21 +4,28 @@ g = {
             return g.d.g.p[n];
         },
         l: function(n) {
-            return g.d.l.p[n];;
+            return g.d.l.p[n];
         },
         f: function(n) /* find( name ) */ {
             let gl = g.v.g(n),
                 lo = g.v.l(n);
-            return (gl != undefined ? gl : (lo != undefined) ? lo : n);
+            return (gl != undefined ? gl : (lo != undefined) ? lo : {v: g.v.p(n)});
+        },
+        p: function(n) /* parse( number ) */ {
+            for(var f in g.d.g.p) {n = n.replace(f, g.v.g(f).v);}
+            for(var f in g.d.l.p) {n = n.replace(f, g.v.l(f).v);}
+            console.log("Parse: " + n);
+            return eval(n);
         }
     },
     p: {
         p: 0,
         i: `
-            globalvar akakfksdv=128;
-            var mylocalname=256;
-            if (akakfksdv == 256) {
-                
+            globalvar first = 32;
+            globalvar second = first / 2;
+            if (first * 2 == 64 && second == 16) {
+                globalvar third = 96;
+                print(Check passed!)
             }
         `,
         f: /* parse( input ) */ function( i ) {
@@ -31,6 +38,16 @@ g = {
                         break;
                     }
                 }
+
+                for (f in g.f) {
+                    if (g.p.i.substring(g.p.p, g.p.p + f.length) == f) {
+                        console.log("Function: '" + f + "'");
+                        g.p.p += f.length - 1;
+                        g.f[f].apply(this, g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).split(","));
+                        break;
+                        
+                    }
+                }
             }
         },
         s: /* seek( char, [avoid] ) */ function( c, a="" ) {
@@ -40,7 +57,6 @@ g = {
                     case c: {s--; break;}
                     case a: {s++; break;}
                 }
-
                 if (g.p.p > g.p.i.length) break;
             }
             return g.p.p;
@@ -50,14 +66,14 @@ g = {
         g: /* globalvar */ {
             c: function(n, v) {
                 this.n = n;
-                this.v = v;
+                this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
             p: {}
         },
         l: /* localvar */ {
             c: function(n, v) {
                 this.n = n;
-                this.v = v;
+                this.v = isNaN(v) ? ((v[0] == "\"" && v[v.length - 1] == "\"") ? v.substring(1, v.length - 1) : g.v.p(v)) : g.v.p(v);
             },
             p: {}
         },
@@ -79,12 +95,12 @@ g = {
         }
     },
     c: /* condtionals */ {
-        "<": (l,r) => {return l < r},
-        ">": (l,r) => {return l > r},
-        "!=": (l,r) => {return l != r},
         "<=": (l,r) => {return l <= r},
         ">=": (l,r) => {return l >= r},
-        "==": (l,r) => {return l == r}
+        "!=": (l,r) => {return l != r},
+        "==": (l,r) => {return l == r},
+        "<": (l,r) =>  {return l < r},
+        ">": (l,r) =>  {return l > r}
     },
     t: /* tokens */ {
         "globalvar": function() {
@@ -100,26 +116,20 @@ g = {
             );
         },
         "if": function() {
-            var n = g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).trim();
-            for(let p = 0; p < n.length; p++) {
-                for(c in g.c) {
-                    if (n.substring(p, p + c.length) == c) {
-                        console.log(c);
-                        let l = n.substring(0, p).trim(),
-                            r = n.substring(p + g.c[c].length, n.length).trim();
-                        if (g.c[c](g.v.f(l).v, g.v.f(r).v) == true) {
-                            // true
-                        } else {
-                            // false
-                        }
-                    }
-                }
+            var n = g.p.i.substring(g.p.s("(") + 1, g.p.s(")")).trim(); g.p.s("{");
+            if (g.v.p(n) == false) {
+                console.log("Fail")
+                g.p.s("}", "{");
             }
-
         }
     },
-
+    f: /* inbuilt functions */ {
+        "print": function(s) {
+            console.log(s);
+        }
+    }
 }
 
-// Run
 g.p.f();
+console.log("Local: " + JSON.stringify(g.d.l.p));
+console.log("Global: " + JSON.stringify(g.d.g.p));
